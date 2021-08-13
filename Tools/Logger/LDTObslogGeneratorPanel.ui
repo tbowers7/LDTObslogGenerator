@@ -15,18 +15,23 @@
   </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QGridLayout" name="gridLayout">
-    <item row="1" column="2">
-     <widget class="QGroupBox" name="TimesWorld">
+    <item row="1" column="0">
+     <widget class="QGroupBox" name="UTCDateTime">
       <property name="title">
-       <string>World Times</string>
+       <string>Universal Time</string>
+      </property>
+      <property name="font">
+       <font>
+        <pointsize>20</pointsize>
+       </font>
       </property>
       <layout class="QGridLayout" name="gridLayout_5">
        <item row="0" column="0">
-        <widget class="QLabel" name="txt_utc">
+        <widget class="QLabel" name="txt_utcdate">
          <property name="font">
           <font>
            <family>Digital-7</family>
-           <pointsize>50</pointsize>
+           <pointsize>30</pointsize>
           </font>
          </property>
          <property name="text">
@@ -37,16 +42,108 @@
          </property>
         </widget>
        </item>
-       <item row="1" column="0">
-        <widget class="QLabel" name="txt_localtime">
+       <item row="2" column="0">
+        <widget class="QLabel" name="txt_utc">
          <property name="font">
           <font>
            <family>Digital-7</family>
-           <pointsize>50</pointsize>
+           <pointsize>30</pointsize>
           </font>
          </property>
          <property name="text">
           <string>LOCAL</string>
+         </property>
+         <property name="alignment">
+          <set>Qt::AlignCenter</set>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+    </item>
+    <item row="1" column="2">
+     <widget class="QGroupBox" name="LocalDateTime">
+      <property name="title">
+       <string>Local Time (MST)</string>
+      </property>
+      <property name="font">
+       <font>
+        <pointsize>20</pointsize>
+       </font>
+      </property>
+      <layout class="QGridLayout" name="gridLayout_5">
+       <item row="0" column="0">
+        <widget class="QLabel" name="txt_localdate">
+         <property name="font">
+          <font>
+           <family>Digital-7</family>
+           <pointsize>30</pointsize>
+          </font>
+         </property>
+         <property name="text">
+          <string>UTC</string>
+         </property>
+         <property name="alignment">
+          <set>Qt::AlignCenter</set>
+         </property>
+        </widget>
+       </item>
+       <item row="2" column="0">
+        <widget class="QLabel" name="txt_localtime">
+         <property name="font">
+          <font>
+           <family>Digital-7</family>
+           <pointsize>30</pointsize>
+          </font>
+         </property>
+         <property name="text">
+          <string>LOCAL</string>
+         </property>
+         <property name="alignment">
+          <set>Qt::AlignCenter</set>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+    </item>
+    <item row="1" column="4">
+     <widget class="QGroupBox" name="SunRiseSet">
+      <property name="title">
+       <string>Sun Status</string>
+      </property>
+      <property name="font">
+       <font>
+        <pointsize>20</pointsize>
+       </font>
+      </property>
+      <layout class="QGridLayout" name="gridLayout_5">
+       <item row="0" column="0">
+        <widget class="QLabel" name="txt_sunel">
+         <property name="font">
+          <font>
+           <family>Digital-7</family>
+           <pointsize>30</pointsize>
+          </font>
+         </property>
+         <property name="text">
+          <string>RISE</string>
+         </property>
+         <property name="alignment">
+          <set>Qt::AlignCenter</set>
+         </property>
+        </widget>
+       </item>
+       <item row="2" column="0">
+        <widget class="QLabel" name="txt_skystat">
+         <property name="font">
+          <font>
+           <family>Digital-7</family>
+           <pointsize>30</pointsize>
+          </font>
+         </property>
+         <property name="text">
+          <string>SET</string>
          </property>
          <property name="alignment">
           <set>Qt::AlignCenter</set>

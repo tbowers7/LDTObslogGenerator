@@ -10,9 +10,6 @@ Modified: Tue Aug 10 2021
 #   pyuicX LDTObslogGeneratorPanel.ui -o LDTObslogGeneratorPanel.py
 # Where X = your Qt version
 
-# Trying to ensure Python 2/3 coexistance ...
-from __future__ import division, print_function, absolute_import
-
 import sys
 import csv
 import pytz
@@ -26,12 +23,12 @@ from os.path import join, basename, getmtime
 import numpy as np
 from PyQt5 import QtGui, QtCore, QtWidgets
 
-from .. import support as fpmis
-
 from . import FITSKeywordPanel as fkwp
 from . import LDTObslogGeneratorPanel as logp
 
 import astropy.io.fits as pyf
+
+import ephem
 
 
 
@@ -210,31 +207,29 @@ class FITSKeyWordDialog(QtWidgets.QDialog, fkwp.Ui_FITSKWDialog):
 
 class LDTObslogGeneratorApp(QtWidgets.QMainWindow, logp.Ui_MainWindow):
     def __init__(self):
-        # Since the SOFIACruiseDirectorPanel file will be overwritten each time
+        # Since the LDTObslogGeneratorPanel file will be overwritten each time
         #   we change something in the design and recreate it, we will not be
         #   writing any code in it, instead we'll create a new class to
         #   combine with the design code
         super(self.__class__, self).__init__()
-        # This is defined in SOFIACruiseDirectorPanel.py file automatically;
-        #   It sets up layout and widgets that are defined
 
+        # This is defined in LDTObslogGeneratorPanel.py file automatically;
+        #   It sets up layout and widgets that are defined
         self.setupUi(self)
 
+        # Set up local ephemeris information / sunrise, sunset criteria
+        self.ldt = ephem.Observer()
+        self.ldt.lat, self.ldt.lon = "34.7443", "-111.4223"
+        self.ldt.elevation = 2361
+        # For USNO-Alamanac-equivalent sunrise/sunset times
+        self.ldt.pressure = 0
+        self.ldt.horizon = '-0:34'
+
         # Some constants/tracking variables and various defaults
-        self.legpos = 0
         self.successparse = False
-        # self.toggle_legparam_values_off()
-        # self.metcounting = False
-        # self.ttlcounting = False
-        # self.legcounting = False
-        # self.legcountingstopped = False
-        # self.doLegCountRemaining = True
-        # self.doLegCountElapsed = False
         self.outputname = ''
         self.localtz = pytz.timezone('America/Phoenix')
-        # self.setDateTimeEditBoxes()
-        # self.txt_met.setText("+00:00:00 MET")
-        # self.txt_ttl.setText("+00:00:00 TTL")
+
         # Is a list really the best way of handling this? Don't know yet.
         self.CruiseLog = []
         self.startdatalog = False
@@ -299,36 +294,7 @@ class LDTObslogGeneratorApp(QtWidgets.QMainWindow, logp.Ui_MainWindow):
         # Actually show the table
         self.table_datalog.show()
 
-        # # Hooking up the various buttons to their actions to take
-        # # Open the file chooser for the flight plan input
-        # self.flightplan_openfile.clicked.connect(self.selectInputFile)
-        # # Flight plan progression
-        # self.leg_previous.clicked.connect(self.prevLeg)
-        # self.leg_next.clicked.connect(self.nextLeg)
-        # # Start the flight progression timers
-        # self.set_takeoff_time.clicked.connect(self.settakeoff)
-        # self.set_landing_time.clicked.connect(self.setlanding)
-        # self.set_takeofflanding.clicked.connect(self.settakeoffandlanding)
-        # # Leg timer control
-        # self.leg_timer_start.clicked.connect(self.startlegtimer)
-        # self.leg_timer_stop.clicked.connect(self.stoplegtimer)
-        # self.leg_timer_reset.clicked.connect(self.resetlegtimer)
-        # # Leg timer counting type (radio buttons)
-        # self.time_select_remaining.clicked.connect(self.countremaining)
-        # self.time_select_elapsed.clicked.connect(self.countelapsed)
-        # # Text log stuff
-        # self.log_post.clicked.connect(self.postlogline)
-        # self.log_inputline.returnPressed.connect(self.postlogline)
-
-        # self.log_quick_faultmccs.clicked.connect(self.mark_faultmccs)
-        # self.log_quick_faultsi.clicked.connect(self.mark_faultsi)
-        # self.log_quick_landing.clicked.connect(self.mark_landing)
-        # self.log_quick_onheading.clicked.connect(self.mark_onheading)
-        # self.log_quick_ontarget.clicked.connect(self.mark_ontarget)
-        # self.log_quick_takeoff.clicked.connect(self.mark_takeoff)
-        # self.log_quick_turning.clicked.connect(self.mark_turning)
-        # self.log_save.clicked.connect(self.selectOutputFile)
-
+        # Data Log Hooks
         self.datalog_opendir.clicked.connect(self.selectDir)
         self.datalog_savefile.clicked.connect(self.selectLogOutputFile)
         self.datalog_forcewrite.clicked.connect(self.writedatalog)
@@ -345,6 +311,7 @@ class LDTObslogGeneratorApp(QtWidgets.QMainWindow, logp.Ui_MainWindow):
         timer.start(500)
         self.showlcd()
 
+
     def spawnkwwindow(self):
         window = FITSKeyWordDialog(self)
         result = window.exec_()
@@ -359,7 +326,7 @@ class LDTObslogGeneratorApp(QtWidgets.QMainWindow, logp.Ui_MainWindow):
                 self.repopulateDatalog(rescan=False)
 
         # Explicitly kill it
-#        del window
+        # del window
 
     def updatetablecols(self):
         # This always puts the NOTES col. right next to the filename
@@ -391,28 +358,6 @@ class LDTObslogGeneratorApp(QtWidgets.QMainWindow, logp.Ui_MainWindow):
                 f.close()
             except Exception:
                 self.txt_logoutputname.setText("ERROR WRITING TO FILE!")
-
-    def mark_faultmccs(self):
-        line = "MCCS fault encountered"
-        self.linestamper(line)
-
-    def mark_faultsi(self):
-        line = "SI fault encountered"
-        self.linestamper(line)
-
-    def selectOutputFile(self):
-        """
-        Spawn the file chooser diaglog box and return the result, attempting
-        to both open and write to the file.
-
-        """
-        defaultname = "SILog_" + self.utcnow.strftime("%Y%m%d.txt")
-        self.outputname = QtWidgets.QFileDialog.getSaveFileName(self,
-                                                                "Save File",
-                                                                defaultname)[0]
-        if self.outputname != '':
-            self.txt_logoutputname.setText("Writing to: " +
-                                           basename(str(self.outputname)))
 
     def selectLogOutputFile(self):
         """
@@ -453,23 +398,6 @@ class LDTObslogGeneratorApp(QtWidgets.QMainWindow, logp.Ui_MainWindow):
             donestr = "+%02i:%02i:%02.0f" % (ihrs, imin, seconds)
         return donestr
 
-    def setDateTimeEditBoxes(self):
-        """
-        Init. the takeoff and landing DateTimeEdit boxes to the time
-        at the start of the app, so we don't have to type in as much.
-        """
-        # Get the current time(s)
-        self.update_times()
-        # Get the actual displayed formatting string (set in the UI file)
-        self.takeoff_time.displayFormat()
-        self.landing_time.displayFormat()
-        # Make the current time into a QDateTime object that we can display
-        cur = QtCore.QDateTime.fromString(self.localnow_datetimestr,
-                                          self.takeoff_time.displayFormat())
-        # Actually put it in the box
-        self.takeoff_time.setDateTime(cur)
-        self.landing_time.setDateTime(cur)
-
     def update_times(self):
         """
         Grab the current UTC and local timezone time, and populate the strings.
@@ -481,13 +409,36 @@ class LDTObslogGeneratorApp(QtWidgets.QMainWindow, logp.Ui_MainWindow):
         self.utcnow = self.utcnow.replace(microsecond=0)
         self.utcnow_str = self.utcnow.strftime(' %H:%M:%S UTC')
         self.utcnow_datetimestr = self.utcnow.strftime('%m/%d/%Y %H:%M:%S $Z')
+        self.utcnow_datestr = self.utcnow.strftime('%Y-%m-%d')
 
         # Safest way to sensibly go from UTC -> local timezone...?
         self.localnow = self.utcnow.replace(
             tzinfo=pytz.utc).astimezone(self.localtz)
-        self.localnow_str = self.localnow.strftime(' %H:%M:%S %Z')
+        self.localnow_str = self.localnow.strftime(' %-I:%M:%S %p')
         self.localnow_datetimestr = self.localnow.strftime(
             '%m/%d/%Y %H:%M:%S')
+        self.localnow_datestr = self.localnow.strftime('%a %h %d, %Y')
+
+        # Compute Local Sunrise / Sunset times, sun elevation status
+        self.ldt.date = ephem.Date(self.utcnow)
+        self.sun = ephem.Sun(self.ldt)
+        self.sunel_str = f"Elevation: {self.sun.alt / np.pi * 180.:.2f}º"
+        self.sunaz_str = f"Azimuth: {self.sun.az}"
+        self.localsunrise = ephem.localtime(self.ldt.previous_rising(ephem.Sun()))
+        self.localsunrise_str = self.localsunrise.strftime('%Y-%m-%d %H:%M:%S')
+        self.localsunset = ephem.localtime(self.ldt.next_setting(ephem.Sun()))
+        self.localsunset_str = self.localsunset.strftime('%Y-%m-%d %H:%M:%S')
+        if (sun_alt := self.sun.alt / np.pi * 180.) > 0:
+            self.skystat_str = "Daylight"
+        elif sun_alt > -6:
+            self.skystat_str = "Civil"
+        elif sun_alt > -12:
+            self.skystat_str = "Nautical"
+        elif sun_alt > -18:
+            self.skystat_str = "Astronomical"
+        else:
+            self.skystat_str = "Dark"
+
 
     def showlcd(self):
         """
@@ -495,79 +446,25 @@ class LDTObslogGeneratorApp(QtWidgets.QMainWindow, logp.Ui_MainWindow):
 
         Contains the clock logic code for all the various timers.
 
-        MET: Mission Elapsed Time
-        TTL: Time unTill Landing
-        Plus the leg timer variants (elapsed/remaining)
-
         Since the times were converted to local elsewhere,
         we ditch the tzinfo to make everything naive to subtract easier.
         """
         # Update the current local/utc times before computing timedeltas
         self.update_times()
-        # We set the takeoff time to be in local time, and we know the
-        #   current time is in local as well. So ditch the tzinfo because
-        #   timezones suck and it's a big pain in the ass otherwise.
-        #   The logic follows the same for each counter/timer.
-        # if self.metcounting is True:
-        #     local2 = self.localnow.replace(tzinfo=None)
-        #     takeoff2 = self.takeoff.replace(tzinfo=None)
-        #     self.met = local2 - takeoff2
-        #     self.metstr = self.totalsec_to_hms_str(self.met) + " MET"
-        #     self.txt_met.setText(self.metstr)
-        # if self.ttlcounting is True:
-        #     local2 = self.localnow.replace(tzinfo=None)
-        #     landing2 = self.landing.replace(tzinfo=None)
-        #     self.ttl = landing2 - local2
-        #     self.ttlstr = self.totalsec_to_hms_str(self.ttl) + " TTL"
-        #     self.txt_ttl.setText(self.ttlstr)
 
-        #     # Visual indicators setup; times are in seconds
-        #     if self.ttl.total_seconds() >= 7200:
-        #         self.txt_ttl.setStyleSheet("QLabel { color : black; }")
-
-        #     elif self.ttl.total_seconds() < 7200 and\
-        #             self.ttl.total_seconds() >= 5400:
-        #         self.txt_ttl.setStyleSheet("QLabel { color : darkyellow; }")
-
-        #     elif self.ttl.total_seconds() < 5400:
-        #         self.txt_ttl.setStyleSheet("QLabel { color : red; }")
-
-        # if self.legcounting is True:
-        #     local2 = self.localnow.replace(tzinfo=None)
-        #     legend = self.timerendtime.replace(tzinfo=None)
-        #     legstart = self.timerstarttime.replace(tzinfo=None)
-
-        #     if self.doLegCountRemaining is True:
-        #         self.legremain = legend - local2
-        #         self.legremainstr = self.totalsec_to_hms_str(self.legremain)
-        #         self.txt_leg_timer.setText(self.legremainstr)
-
-        #         # Visual indicators setup
-        #         if self.legremain.total_seconds() >= 3600:
-        #             self.txt_leg_timer.setStyleSheet(
-        #                 "QLabel { color : black; }")
-
-        #         elif self.legremain.total_seconds() < 3600 and\
-        #                 self.legremain.total_seconds() >= 2400:
-        #             self.txt_leg_timer.setStyleSheet(
-        #                 "QLabel { color : darkyellow; }")
-
-        #         elif self.legremain.total_seconds() < 2400:
-        #             self.txt_leg_timer.setStyleSheet("QLabel { color : red; }")
-
-        #     if self.doLegCountElapsed is True:
-        #         self.legelapsed = local2 - legstart
-        #         self.legelapsedstr = self.totalsec_to_hms_str(self.legelapsed)
-        #         self.txt_leg_timer.setText(self.legelapsedstr)
-
+        self.txt_utcdate.setText(self.utcnow_datestr)
+        self.txt_localdate.setText(self.localnow_datestr)
         self.txt_utc.setText(self.utcnow_str)
         self.txt_localtime.setText(self.localnow_str)
+        self.txt_sunel.setText(self.sunel_str)
+        self.txt_skystat.setText(self.skystat_str)
 
-        if self.startdatalog is True and\
+
+        if self.startdatalog is True and \
            self.datalog_autoupdate.isChecked() is True:
             if self.utcnow.second % self.datalog_updateinterval.value() == 0:
                 self.updateDatalog()
-#                print self.datatable
+                # print self.datatable
 
     def adddatalogrow(self):
         rowPosition = self.table_datalog.rowCount()
@@ -604,7 +501,7 @@ class LDTObslogGeneratorApp(QtWidgets.QMainWindow, logp.Ui_MainWindow):
 
         # First, grab the data
         tablist = []
-        for n in xrange(0, self.table_datalog.rowCount()):
+        for n in range(0, self.table_datalog.rowCount()):
             rowdata = {}
             for m, hkey in enumerate(thedlist):
                 if rescan is True:
@@ -648,7 +545,7 @@ class LDTObslogGeneratorApp(QtWidgets.QMainWindow, logp.Ui_MainWindow):
         self.table_datalog.resizeRowsToContents()
 
         # Seems to be more trouble than it's worth, so keep this commented
-#        self.table_datalog.setSortingEnabled(True)
+        # self.table_datalog.setSortingEnabled(True)
 
         # Reenable fun stuff
         self.table_datalog.horizontalHeader().setSectionsMovable(True)
@@ -702,7 +599,7 @@ class LDTObslogGeneratorApp(QtWidgets.QMainWindow, logp.Ui_MainWindow):
 
             # Compare the new listing to the unique set of the old ones
             #   Previous logic was:
-#            diff = [x for x in self.data_current if x not in s]
+            # diff = [x for x in self.data_current if x not in s]
             # Unrolled logic (might be easier to spot a goof-up)
             diff = []
             idxs = []
@@ -731,7 +628,7 @@ class LDTObslogGeneratorApp(QtWidgets.QMainWindow, logp.Ui_MainWindow):
                 self.table_datalog.insertRow(rowPosition)
                 # Actually get the header data
                 theData = headerDict(realfile, self.headers, HDU=self.fitshdu)
-#                self.allData.append(theData)
+                # self.allData.append(theData)
                 self.datanew.append(theData)
 
             self.setTableData()
@@ -757,11 +654,11 @@ class LDTObslogGeneratorApp(QtWidgets.QMainWindow, logp.Ui_MainWindow):
                                                m+1, newitem)
 
             # Resize to minimum required, then display
-#            self.table_datalog.resizeColumnsToContents()
+            # self.table_datalog.resizeColumnsToContents()
             self.table_datalog.resizeRowsToContents()
 
             # Seems to be more trouble than it's worth, so keep this commented
-#            self.table_datalog.setSortingEnabled(True)
+            # self.table_datalog.setSortingEnabled(True)
 
             # Reenable fun stuff
             self.table_datalog.horizontalHeader().setSectionsMovable(True)
