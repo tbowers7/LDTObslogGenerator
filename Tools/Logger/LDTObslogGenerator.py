@@ -436,10 +436,9 @@ class LDTObslogGeneratorApp(QtWidgets.QMainWindow, logp.Ui_MainWindow):
         # If the selected instrument is changed, update the columns
         if (sel_inst := self.datalog_instrumentselect.currentText()) != \
             self.selected_instrument:
-            # print(sel_inst)
             self.selected_instrument = sel_inst
             self.set_instrument_attrs()
-            # To appease repopulateDatalog(), place the headers from the
+            # To appease repopulate_datalog(), place the headers from the
             #  new instrument into the .newheaders attribute
             self.newheaders = self.headers
             self.repopulate_datalog(rescan=True)
@@ -497,17 +496,17 @@ class LDTObslogGeneratorApp(QtWidgets.QMainWindow, logp.Ui_MainWindow):
         self.table_datalog.setSortingEnabled(False)
         self.table_datalog.horizontalHeader().setSectionsMovable(False)
         self.table_datalog.horizontalHeader().setDragEnabled(False)
-        self.table_datalog.horizontalHeader().setDragDropMode(QtWidgets.QAbstractItemView.NoDragDrop)
+        self.table_datalog.horizontalHeader().setDragDropMode(
+            QtWidgets.QAbstractItemView.NoDragDrop)
 
         thedlist = ['NOTES'] + self.headers
-        print(F"Column List: {thedlist}")
 
         # First, grab the data
         tablist = []
         for n in range(0, self.table_datalog.rowCount()):
             # If we are rescanning the directory, grab the row wholesale
             if rescan is True:
-                fname = self.datafilenames[n]
+                fname = f"{self.datalogdir}/{self.datafilenames[n]}"
                 rowdata = headerDict(fname, self.headers,
                                         HDU=self.fitshdu)
             # Otherwise, snapshot the current table
