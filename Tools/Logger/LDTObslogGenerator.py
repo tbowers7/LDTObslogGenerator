@@ -12,7 +12,6 @@ Modified: Tue Aug 10 2021
 
 import sys
 import csv
-from numpy.lib.function_base import _select_dispatcher
 import pytz
 import glob
 import fnmatch
@@ -23,14 +22,11 @@ from os.path import join, basename, getmtime
 
 import numpy as np
 from PyQt5 import QtGui, QtCore, QtWidgets
+import astropy.io.fits as pyf
+import ephem
 
 from . import FITSKeywordPanel as fkwp
 from . import LDTObslogGeneratorPanel as logp
-
-import astropy.io.fits as pyf
-
-import ephem
-
 
 
 def headerList(infile, headerlist, HDU=0):
@@ -92,6 +88,7 @@ class FITSKeyWordDialog(QtWidgets.QDialog, fkwp.Ui_FITSKWDialog):
 
         self.setupUi(self)
 
+        # Hooks for the various buttons
         self.fitskw_add.clicked.connect(self.getkeywordfromuser)
         self.fitskw_remove.clicked.connect(self.removekeywordfromlist)
         self.fitskw_model = self.fitskw_listing.model()
@@ -221,7 +218,7 @@ class LDTObslogGeneratorApp(QtWidgets.QMainWindow, logp.Ui_MainWindow):
         #   It sets up layout and widgets that are defined
         self.setupUi(self)
 
-        # Set up local ephemeris information / sunrise, sunset criteria
+        # Set up locale ephemeris information
         self.ldt = ephem.Observer()
         self.ldt.lat, self.ldt.lon = "34.7443", "-111.4223"
         self.ldt.elevation = 2361
@@ -232,7 +229,6 @@ class LDTObslogGeneratorApp(QtWidgets.QMainWindow, logp.Ui_MainWindow):
         self.localtz = pytz.timezone('America/Phoenix')
 
         # Is a list really the best way of handling this? Don't know yet.
-        self.CruiseLog = []
         self.startdatalog = False
         self.data_current = []
         self.data_previous = []
@@ -349,20 +345,6 @@ class LDTObslogGeneratorApp(QtWidgets.QMainWindow, logp.Ui_MainWindow):
             self.txt_datalogdir.setText(self.datalogdir)
             self.startdatalog = True
 
-    def linestamper(self, line):
-        timestamp = datetime.datetime.utcnow()
-        timestamp = timestamp.replace(microsecond=0)
-        stampedline = timestamp.isoformat() + "> " + line
-        self.CruiseLog.append(stampedline + '\n')
-        self.log_display.append(stampedline)
-        if self.outputname != '':
-            try:
-                f = open(self.outputname, 'w')
-                f.writelines(self.CruiseLog)
-                f.close()
-            except Exception:
-                self.txt_logoutputname.setText("ERROR WRITING TO FILE!")
-
     def selectLogOutputFile(self):
         """
         Spawn the file chooser diaglog box and return the result, attempting
@@ -377,30 +359,6 @@ class LDTObslogGeneratorApp(QtWidgets.QMainWindow, logp.Ui_MainWindow):
         if self.logoutnme != '':
             self.txt_datalogsavefile.setText("Writing to: " +
                                              basename(str(self.logoutnme)))
-
-    def postlogline(self):
-        line = self.log_inputline.text()
-        self.linestamper(line)
-        # Clear the line
-        self.log_inputline.setText('')
-
-    def totalsec_to_hms_str(self, obj):
-        tsecs = obj.total_seconds()
-        if tsecs < 0:
-            isneg = True
-            tsecs *= -1
-        else:
-            isneg = False
-        hours = tsecs/60./60.
-        ihrs = np.int(hours)
-        minutes = (hours - ihrs)*60.
-        imin = np.int(minutes)
-        seconds = (minutes - imin)*60.
-        if isneg is True:
-            donestr = "-%02i:%02i:%02.0f" % (ihrs, imin, seconds)
-        else:
-            donestr = "+%02i:%02i:%02.0f" % (ihrs, imin, seconds)
-        return donestr
 
     def update_times(self):
         """
@@ -423,7 +381,7 @@ class LDTObslogGeneratorApp(QtWidgets.QMainWindow, logp.Ui_MainWindow):
             '%m/%d/%Y %H:%M:%S')
         self.localnow_datestr = self.localnow.strftime('%a %h %d, %Y')
 
-        # Compute Local Sunrise / Sunset times, sun elevation status
+        # Compute Local Sunrise / Sunset times, Sun Elevation status
         self.ldt.date = ephem.Date(self.utcnow)
         self.sun = ephem.Sun(self.ldt)
         self.sunel_str = f"Elevation: {self.sun.alt / np.pi * 180.:.2f}º"
@@ -436,11 +394,11 @@ class LDTObslogGeneratorApp(QtWidgets.QMainWindow, logp.Ui_MainWindow):
         if (sun_alt := self.sun.alt / np.pi * 180.) > 0:
             self.skystat_str = "Daylight"
         elif sun_alt > -6:
-            self.skystat_str = "Civil"
+            self.skystat_str = "Civil Twilight"
         elif sun_alt > -12:
-            self.skystat_str = "Nautical"
+            self.skystat_str = "Nautical Twilight"
         elif sun_alt > -18:
-            self.skystat_str = "Astronomical"
+            self.skystat_str = "Astronomical Twilight"
         else:
             self.skystat_str = "Dark"
 
@@ -470,9 +428,8 @@ class LDTObslogGeneratorApp(QtWidgets.QMainWindow, logp.Ui_MainWindow):
             # print(sel_inst)
             self.selected_instrument = sel_inst
             # NEED TO FIGURE OUT HOW TO ADJUST THE KEYWORDS DESIRED...
-            self.updatetablecols()
+            self.repopulateDatalog()
    
-
         if self.startdatalog is True and \
            self.datalog_autoupdate.isChecked() is True:
             if self.utcnow.second % self.datalog_updateinterval.value() == 0:
@@ -709,23 +666,6 @@ class LDTObslogGeneratorApp(QtWidgets.QMainWindow, logp.Ui_MainWindow):
             except Exception as why:
                 print(str(why))
                 self.txt_datalogsavefile.setText("ERROR WRITING TO FILE!")
-
-    def browse_folder(self):
-        """
-        What is this function for?  Is it vestigial?  I don't remember
-        this function or its purpose at all :-/
-        """
-        # In case there are any existing elements in the list
-        self.listWidget.clear()
-        titlestr = "Choose a SOFIA mission file (.mis)"
-        directory = QtWidgets.QFileDialog.getExistingDirectory(self, titlestr)[0]
-
-        # if user didn't pick a directory don't continue
-        if directory:
-            # for all files, if any, in the directory
-            for file_name in listdir(directory):
-                # add file to the listWidget
-                self.listWidget.addItem(file_name)
 
 
 def main():
