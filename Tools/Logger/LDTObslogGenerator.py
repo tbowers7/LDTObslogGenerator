@@ -12,6 +12,7 @@ Modified: Tue Aug 10 2021
 
 import sys
 import csv
+from numpy.lib.function_base import _select_dispatcher
 import pytz
 import glob
 import fnmatch
@@ -206,6 +207,9 @@ class FITSKeyWordDialog(QtWidgets.QDialog, fkwp.Ui_FITSKWDialog):
 
 
 class LDTObslogGeneratorApp(QtWidgets.QMainWindow, logp.Ui_MainWindow):
+    """
+    Main class driving the GUI.
+    """
     def __init__(self):
         # Since the LDTObslogGeneratorPanel file will be overwritten each time
         #   we change something in the design and recreate it, we will not be
@@ -221,9 +225,6 @@ class LDTObslogGeneratorApp(QtWidgets.QMainWindow, logp.Ui_MainWindow):
         self.ldt = ephem.Observer()
         self.ldt.lat, self.ldt.lon = "34.7443", "-111.4223"
         self.ldt.elevation = 2361
-        # For USNO-Alamanac-equivalent sunrise/sunset times
-        self.ldt.pressure = 0
-        self.ldt.horizon = '-0:34'
 
         # Some constants/tracking variables and various defaults
         self.successparse = False
@@ -304,6 +305,9 @@ class LDTObslogGeneratorApp(QtWidgets.QMainWindow, logp.Ui_MainWindow):
         self.datalog_deleterow.clicked.connect(self.deldatalogrow)
         # Add an action that detects when a cell is changed by the user
         #  in table_datalog!
+
+        # Set tracker variable for instrument
+        self.selected_instrument = self.datalog_instrumentselect.currentText()
 
         # Generic timer setup stuff
         timer = QtCore.QTimer(self)
@@ -424,7 +428,8 @@ class LDTObslogGeneratorApp(QtWidgets.QMainWindow, logp.Ui_MainWindow):
         self.sun = ephem.Sun(self.ldt)
         self.sunel_str = f"Elevation: {self.sun.alt / np.pi * 180.:.2f}º"
         self.sunaz_str = f"Azimuth: {self.sun.az}"
-        self.localsunrise = ephem.localtime(self.ldt.previous_rising(ephem.Sun()))
+        self.localsunrise = ephem.localtime(
+            self.ldt.previous_rising(ephem.Sun()))
         self.localsunrise_str = self.localsunrise.strftime('%Y-%m-%d %H:%M:%S')
         self.localsunset = ephem.localtime(self.ldt.next_setting(ephem.Sun()))
         self.localsunset_str = self.localsunset.strftime('%Y-%m-%d %H:%M:%S')
@@ -459,6 +464,14 @@ class LDTObslogGeneratorApp(QtWidgets.QMainWindow, logp.Ui_MainWindow):
         self.txt_sunel.setText(self.sunel_str)
         self.txt_skystat.setText(self.skystat_str)
 
+        # If the selected instrument is changed, update the columns
+        if (sel_inst := self.datalog_instrumentselect.currentText()) != \
+            self.selected_instrument:
+            # print(sel_inst)
+            self.selected_instrument = sel_inst
+            # NEED TO FIGURE OUT HOW TO ADJUST THE KEYWORDS DESIRED...
+            self.updatetablecols()
+   
 
         if self.startdatalog is True and \
            self.datalog_autoupdate.isChecked() is True:
