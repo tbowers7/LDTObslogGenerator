@@ -61,7 +61,7 @@
       </layout>
      </widget>
     </item>
-    <item row="1" column="2">
+    <item row="1" column="1">
      <widget class="QGroupBox" name="LocalDateTime">
       <property name="title">
        <string>Local Time (MST)</string>
@@ -107,7 +107,7 @@
       </layout>
      </widget>
     </item>
-    <item row="1" column="4">
+    <item row="1" column="3">
      <widget class="QGroupBox" name="SunRiseSet">
       <property name="title">
        <string>Sun Status</string>
@@ -127,7 +127,7 @@
           </font>
          </property>
          <property name="text">
-          <string>RISE</string>
+          <string>SUN ELEVATION</string>
          </property>
          <property name="alignment">
           <set>Qt::AlignCenter</set>
@@ -143,7 +143,53 @@
           </font>
          </property>
          <property name="text">
-          <string>SET</string>
+          <string>SKY STATUS</string>
+         </property>
+         <property name="alignment">
+          <set>Qt::AlignCenter</set>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+    </item>
+    <item row="1" column="4">
+     <widget class="QGroupBox" name="MoonElPhase">
+      <property name="title">
+       <string>Moon Status</string>
+      </property>
+      <property name="font">
+       <font>
+        <pointsize>20</pointsize>
+       </font>
+      </property>
+      <layout class="QGridLayout" name="gridLayout_5">
+       <item row="0" column="0">
+        <widget class="QLabel" name="txt_moonel">
+         <property name="font">
+          <font>
+           <family>Digital-7</family>
+           <pointsize>30</pointsize>
+          </font>
+         </property>
+         <property name="text">
+          <string>ELEVATION</string>
+         </property>
+         <property name="alignment">
+          <set>Qt::AlignCenter</set>
+         </property>
+        </widget>
+       </item>
+       <item row="2" column="0">
+        <widget class="QLabel" name="txt_moonphase">
+         <property name="font">
+          <font>
+           <family>Digital-7</family>
+           <pointsize>30</pointsize>
+          </font>
+         </property>
+         <property name="text">
+          <string>PHASE</string>
          </property>
          <property name="alignment">
           <set>Qt::AlignCenter</set>

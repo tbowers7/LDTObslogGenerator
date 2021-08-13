@@ -10,7 +10,6 @@ Modified: Tue Aug 10 2021
 #   pyuicX LDTObslogGeneratorPanel.ui -o LDTObslogGeneratorPanel.py
 # Where X = your Qt version
 
-from re import S
 import sys
 import csv
 import pytz
@@ -392,16 +391,10 @@ class LDTObslogGeneratorApp(QtWidgets.QMainWindow, logp.Ui_MainWindow):
             '%m/%d/%Y %H:%M:%S')
         self.localnow_datestr = self.localnow.strftime('%a %h %d, %Y')
 
-        # Compute Local Sunrise / Sunset times, Sun Elevation status
+        # Compute Sun Elevation status
         self.ldt.date = ephem.Date(self.utcnow)
         self.sun = ephem.Sun(self.ldt)
         self.sunel_str = f"Elevation: {self.sun.alt / np.pi * 180.:.2f}º"
-        self.sunaz_str = f"Azimuth: {self.sun.az}"
-        self.localsunrise = ephem.localtime(
-            self.ldt.previous_rising(ephem.Sun()))
-        self.localsunrise_str = self.localsunrise.strftime('%Y-%m-%d %H:%M:%S')
-        self.localsunset = ephem.localtime(self.ldt.next_setting(ephem.Sun()))
-        self.localsunset_str = self.localsunset.strftime('%Y-%m-%d %H:%M:%S')
         if (sun_alt := self.sun.alt / np.pi * 180.) > 0:
             self.skystat_str = "Daylight"
         elif sun_alt > -6:
@@ -412,6 +405,11 @@ class LDTObslogGeneratorApp(QtWidgets.QMainWindow, logp.Ui_MainWindow):
             self.skystat_str = "Astronomical Twilight"
         else:
             self.skystat_str = "Dark"
+
+        # Compute Moon Elevation & Phase
+        self.moon = ephem.Moon(self.ldt)
+        self.moonel_str = f"El: {self.moon.alt / np.pi * 180.:.2f}º"
+        self.moonph_str = f"Phase: {self.moon.phase:.0f}%"
 
 
     def show_lcd(self):
@@ -432,6 +430,8 @@ class LDTObslogGeneratorApp(QtWidgets.QMainWindow, logp.Ui_MainWindow):
         self.txt_localtime.setText(self.localnow_str)
         self.txt_sunel.setText(self.sunel_str)
         self.txt_skystat.setText(self.skystat_str)
+        self.txt_moonel.setText(self.moonel_str)
+        self.txt_moonphase.setText(self.moonph_str)
 
         # If the selected instrument is changed, update the columns
         if (sel_inst := self.datalog_instrumentselect.currentText()) != \
