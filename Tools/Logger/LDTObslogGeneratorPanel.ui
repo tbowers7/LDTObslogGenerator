@@ -220,10 +220,17 @@
            <item row="10" column="0" colspan="6">
             <widget class="QWidget" name="widget_6" native="true">
              <layout class="QGridLayout" name="gridLayout_14">
-              <item row="0" column="4">
+              <item row="0" column="5">
                <widget class="QPushButton" name="datalog_editkeywords">
                 <property name="text">
                  <string>Edit Keywords ...</string>
+                </property>
+               </widget>
+              </item>
+              <item row="0" column="4">
+               <widget class="QPushButton" name="datalog_cleartable">
+                <property name="text">
+                 <string>Clear Table</string>
                 </property>
                </widget>
               </item>

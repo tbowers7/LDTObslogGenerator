@@ -10,6 +10,7 @@ Modified: Tue Aug 10 2021
 #   pyuicX LDTObslogGeneratorPanel.ui -o LDTObslogGeneratorPanel.py
 # Where X = your Qt version
 
+from re import S
 import sys
 import csv
 import pytz
@@ -307,6 +308,7 @@ class LDTObslogGeneratorApp(QtWidgets.QMainWindow, logp.Ui_MainWindow):
         self.datalog_editkeywords.clicked.connect(self.spawn_kw_window)
         self.datalog_addrow.clicked.connect(self.add_datalog_row)
         self.datalog_deleterow.clicked.connect(self.del_datalog_row)
+        self.datalog_cleartable.clicked.connect(self.clear_datalog)
         # Add an action that detects when a cell is changed by the user
         #  in table_datalog!
 
@@ -446,7 +448,6 @@ class LDTObslogGeneratorApp(QtWidgets.QMainWindow, logp.Ui_MainWindow):
            self.datalog_autoupdate.isChecked() is True:
             if self.utcnow.second % self.datalog_updateinterval.value() == 0:
                 self.update_datalog()
-                # print self.datatable
 
 
     def add_datalog_row(self):
@@ -471,6 +472,22 @@ class LDTObslogGeneratorApp(QtWidgets.QMainWindow, logp.Ui_MainWindow):
             self.write_datalog()
 
 
+    def clear_datalog(self):
+        # Clear datafilenames
+        self.datafilenames = []
+
+        # Clear the table, reset column/row N to zero, update table columns
+        self.table_datalog.clear()
+        self.table_datalog.setColumnCount(0)
+        self.table_datalog.setRowCount(0)
+        self.update_table_cols()
+
+        # Looks prettier with this stuff, and show the table
+        self.table_datalog.resizeColumnsToContents()
+        self.table_datalog.resizeRowsToContents()
+        self.table_datalog.show()
+
+
     def repopulate_datalog(self, rescan=False):
         """
         After changing the column ordering or adding/removing keywords,
@@ -490,7 +507,7 @@ class LDTObslogGeneratorApp(QtWidgets.QMainWindow, logp.Ui_MainWindow):
         for n in range(0, self.table_datalog.rowCount()):
             # If we are rescanning the directory, grab the row wholesale
             if rescan is True:
-                fname = self.data_current[n]
+                fname = self.datafilenames[n]
                 rowdata = headerDict(fname, self.headers,
                                         HDU=self.fitshdu)
             # Otherwise, snapshot the current table
@@ -572,16 +589,12 @@ class LDTObslogGeneratorApp(QtWidgets.QMainWindow, logp.Ui_MainWindow):
             (can't use creation time cross-platform)
         """
         # Get the current list of FITS files in the location
-        if self.instrument == 'HAWCFlight':
-            self.data_current = glob.glob(str(self.datalogdir) + "/*.grabme")
-        elif self.instrument == 'FIFI-LS':
-            curdata = []
-            for root, dirnames, filenames in walk(str(self.datalogdir)):
-                for filename in fnmatch.filter(filenames, '*.fits'):
-                    curdata.append(join(root, filename))
-            self.data_current = curdata
-        else:
+        try:
             self.data_current = glob.glob(str(self.datalogdir) + "/*.fits")
+        except AttributeError:
+            # Just return -- there is already a notice next to "Set Data
+            #  Directory" saying "No Directory Chosen to Scan!"
+            return
 
         # Correct the file listing to be ordered by modification time
         self.data_current.sort(key=getmtime)
@@ -591,11 +604,7 @@ class LDTObslogGeneratorApp(QtWidgets.QMainWindow, logp.Ui_MainWindow):
         #   of current and previous data. Maybe it's a network path bug?
         #   (grasping at any and all straws here)
         bncur = [basename(x) for x in self.data_current]
-
-        if self.instrument == "HAWCFlight":
-            bnpre = [basename(x)[:-4] + 'grabme' for x in self.datafilenames]
-        else:
-            bnpre = [basename(x) for x in self.datafilenames]
+        bnpre = [basename(x) for x in self.datafilenames]
 
         if len(bncur) != len(bnpre):
             self.datanew = []
