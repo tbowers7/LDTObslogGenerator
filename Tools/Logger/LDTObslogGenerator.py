@@ -91,13 +91,13 @@ class FITSKeyWordDialog(QtWidgets.QDialog, fkwp.Ui_FITSKWDialog):
         self.setupUi(self)
 
         # Hooks for the various buttons
-        self.fitskw_add.clicked.connect(self.getkeywordfromuser)
-        self.fitskw_remove.clicked.connect(self.removekeywordfromlist)
+        self.fitskw_add.clicked.connect(self.get_keyword_from_user)
+        self.fitskw_remove.clicked.connect(self.remove_keyword_from_list)
         self.fitskw_model = self.fitskw_listing.model()
-        self.fitskw_model.layoutChanged.connect(self.reorderedheadlist)
+        self.fitskw_model.layoutChanged.connect(self.reordered_head_list)
 
-        self.fitskw_savelist.clicked.connect(self.kwsavelist)
-        self.fitskw_loadlist.clicked.connect(self.kwloadlist)
+        self.fitskw_savelist.clicked.connect(self.save_kw_list)
+        self.fitskw_loadlist.clicked.connect(self.load_kw_list)
 
         self.fitskw_dialogbutts.accepted.connect(self.accept)
         self.fitskw_dialogbutts.rejected.connect(self.reject)
@@ -107,17 +107,17 @@ class FITSKeyWordDialog(QtWidgets.QDialog, fkwp.Ui_FITSKWDialog):
         # Grab a few things from the parent widget to use here
         self.headers = self.parentWidget().headers
         self.fitshdu = self.parentWidget().fitshdu
-        self.reorderkwwidget()
-        self.updateheadlist()
+        self.reorder_kw_widget()
+        self.update_head_list()
 
 
-    def reorderedheadlist(self):
-        self.updateheadlist()
+    def reordered_head_list(self):
+        self.update_head_list()
         self.txt_fitskw_status.setText("Unsaved Changes!")
 
 
-    def kwsavelist(self):
-        self.selectKWFile(kind='save')
+    def save_kw_list(self):
+        self.select_kw_file(kind='save')
         if self.kwname != '':
             try:
                 f = open(self.kwname, 'w')
@@ -137,8 +137,8 @@ class FITSKeyWordDialog(QtWidgets.QDialog, fkwp.Ui_FITSKWDialog):
                 self.txt_fitskw_status.setText("ERROR WRITING TO FILE!")
 
 
-    def kwloadlist(self):
-        self.selectKWFile(kind='load')
+    def load_kw_list(self):
+        self.select_kw_file(kind='load')
         if self.kwname != '':
             try:
                 f = open(self.kwname, 'r')
@@ -155,16 +155,16 @@ class FITSKeyWordDialog(QtWidgets.QDialog, fkwp.Ui_FITSKWDialog):
                 f.close()
                 # Loading could have left us with a list of lists, so flatten
                 self.headers = list(itertools.chain(*self.headers))
-                self.reorderkwwidget()
+                self.reorder_kw_widget()
 
 
-    def reorderkwwidget(self):
+    def reorder_kw_widget(self):
         self.fitskw_listing.clear()
         for key in self.headers:
             self.fitskw_listing.addItem(QtWidgets.QListWidgetItem(key))
 
 
-    def getkeywordfromuser(self):
+    def get_keyword_from_user(self):
         text, ok = QtWidgets.QInputDialog.getText(self, "Add Keyword",
                                                   "New Keyword:",
                                                   QtWidgets.QLineEdit.Normal,
@@ -174,20 +174,20 @@ class FITSKeyWordDialog(QtWidgets.QDialog, fkwp.Ui_FITSKWDialog):
             text = text.strip()
             text = text.upper()
             self.fitskw_listing.addItem(QtWidgets.QListWidgetItem(text))
-            self.reorderkwwidget()
-            self.updateheadlist()
+            self.reorder_kw_widget()
+            self.update_head_list()
             self.txt_fitskw_status.setText("Unsaved Changes!")
 
 
-    def removekeywordfromlist(self):
+    def remove_keyword_from_list(self):
         for it in self.fitskw_listing.selectedItems():
             self.fitskw_listing.takeItem(self.fitskw_listing.row(it))
         self.txt_fitskw_status.setText("Unsaved Changes!")
-        self.updateheadlist()
-        self.reorderkwwidget()
+        self.update_head_list()
+        self.reorder_kw_widget()
 
 
-    def selectKWFile(self, kind='save'):
+    def select_kw_file(self, kind='save'):
         """
         Spawn the file chooser diaglog box and return the result, attempting
         to both open and write to the file.
@@ -205,7 +205,7 @@ class FITSKeyWordDialog(QtWidgets.QDialog, fkwp.Ui_FITSKWDialog):
                                                                 defaultname)[0]
 
 
-    def updateheadlist(self):
+    def update_head_list(self):
         self.headers = []
         for j in range(self.fitskw_listing.count()):
             ched = self.fitskw_listing.item(j).text()
@@ -289,10 +289,8 @@ class LDTObslogGeneratorApp(QtWidgets.QMainWindow, logp.Ui_MainWindow):
         # Set self.instrument and self.headers attributes
         self.set_instrument_attrs()
 
-        # Things are easier if the keywords are always in CAPS
-        self.headers = [each.upper() for each in self.headers]
         # The addition of the NOTES column happens in here
-        self.updatetablecols()
+        self.update_table_cols()
 
         # Looks prettier with this stuff
         self.table_datalog.resizeColumnsToContents()
@@ -301,22 +299,22 @@ class LDTObslogGeneratorApp(QtWidgets.QMainWindow, logp.Ui_MainWindow):
         # Actually show the table
         self.table_datalog.show()
 
-        # Data Log Hooks
-        self.datalog_opendir.clicked.connect(self.selectDir)
-        self.datalog_savefile.clicked.connect(self.selectLogOutputFile)
-        self.datalog_forcewrite.clicked.connect(self.writedatalog)
-        self.datalog_forceupdate.clicked.connect(self.updateDatalog)
-        self.datalog_editkeywords.clicked.connect(self.spawnkwwindow)
-        self.datalog_addrow.clicked.connect(self.adddatalogrow)
-        self.datalog_deleterow.clicked.connect(self.deldatalogrow)
+        # Data Log Button Hooks
+        self.datalog_opendir.clicked.connect(self.select_data_dir)
+        self.datalog_savefile.clicked.connect(self.select_log_output_file)
+        self.datalog_forcewrite.clicked.connect(self.write_datalog)
+        self.datalog_forceupdate.clicked.connect(self.update_datalog)
+        self.datalog_editkeywords.clicked.connect(self.spawn_kw_window)
+        self.datalog_addrow.clicked.connect(self.add_datalog_row)
+        self.datalog_deleterow.clicked.connect(self.del_datalog_row)
         # Add an action that detects when a cell is changed by the user
         #  in table_datalog!
 
         # Generic timer setup stuff
         timer = QtCore.QTimer(self)
-        timer.timeout.connect(self.showlcd)
+        timer.timeout.connect(self.show_lcd)
         timer.start(500)
-        self.showlcd()
+        self.show_lcd()
 
 
     def set_instrument_attrs(self):
@@ -324,9 +322,13 @@ class LDTObslogGeneratorApp(QtWidgets.QMainWindow, logp.Ui_MainWindow):
         #  currently selected instrument
         self.instrument = self.selected_instrument
         self.headers = self.inst_list[self.selected_instrument]['headers']
+        # Things are easier if the keywords are always in CAPS
+        self.headers = [each.upper() for each in self.headers]
 
 
-    def spawnkwwindow(self):
+    def spawn_kw_window(self):
+        """Spawn the KeyWord editing window
+        """
         window = FITSKeyWordDialog(self)
         result = window.exec_()
         if result == 1:
@@ -337,24 +339,13 @@ class LDTObslogGeneratorApp(QtWidgets.QMainWindow, logp.Ui_MainWindow):
             # NOT WORKING YET
             # Update the column data itself if we're actually logging
             if self.startdatalog is True:
-                self.repopulateDatalog(rescan=False)
+                self.repopulate_datalog(rescan=False)
 
         # Explicitly kill it
         # del window
 
 
-    def updatetablecols(self):
-        # This always puts the NOTES col. right next to the filename
-        self.table_datalog.insertColumn(0)
-
-        # Add the number of columns we'll need for the header keys given
-        for hkey in self.headers:
-            colPosition = self.table_datalog.columnCount()
-            self.table_datalog.insertColumn(colPosition)
-        self.table_datalog.setHorizontalHeaderLabels(['NOTES'] + self.headers)
-
-
-    def selectDir(self):
+    def select_data_dir(self):
         dtxt = 'Select Data Directory'
         self.datalogdir = QtWidgets.QFileDialog.getExistingDirectory(self, dtxt)
         if self.datalogdir != '':
@@ -362,7 +353,7 @@ class LDTObslogGeneratorApp(QtWidgets.QMainWindow, logp.Ui_MainWindow):
             self.startdatalog = True
 
 
-    def selectLogOutputFile(self):
+    def select_log_output_file(self):
         """
         Spawn the file chooser diaglog box and return the result, attempting
         to both open and write to the file.
@@ -421,7 +412,7 @@ class LDTObslogGeneratorApp(QtWidgets.QMainWindow, logp.Ui_MainWindow):
             self.skystat_str = "Dark"
 
 
-    def showlcd(self):
+    def show_lcd(self):
         """
         The main loop for the code.
 
@@ -446,26 +437,28 @@ class LDTObslogGeneratorApp(QtWidgets.QMainWindow, logp.Ui_MainWindow):
             # print(sel_inst)
             self.selected_instrument = sel_inst
             self.set_instrument_attrs()
-            # NEED TO FIGURE OUT HOW TO REPOPULATE THE TABLE WITHOUT CRASHING...
-            self.repopulateDatalog()
+            # To appease repopulateDatalog(), place the headers from the
+            #  new instrument into the .newheaders attribute
+            self.newheaders = self.headers
+            self.repopulate_datalog(rescan=True)
    
         if self.startdatalog is True and \
            self.datalog_autoupdate.isChecked() is True:
             if self.utcnow.second % self.datalog_updateinterval.value() == 0:
-                self.updateDatalog()
+                self.update_datalog()
                 # print self.datatable
 
 
-    def adddatalogrow(self):
+    def add_datalog_row(self):
         rowPosition = self.table_datalog.rowCount()
         self.table_datalog.insertRow(rowPosition)
         self.datafilenames.append('--> ')
         # Actually set the labels for rows
         self.table_datalog.setVerticalHeaderLabels(self.datafilenames)
-        self.writedatalog()
+        self.write_datalog()
 
 
-    def deldatalogrow(self):
+    def del_datalog_row(self):
         bad = self.table_datalog.currentRow()
         # -1 means we didn't select anything
         if bad != -1:
@@ -475,10 +468,10 @@ class LDTObslogGeneratorApp(QtWidgets.QMainWindow, logp.Ui_MainWindow):
 
             # Redraw
             self.table_datalog.setVerticalHeaderLabels(self.datafilenames)
-            self.writedatalog()
+            self.write_datalog()
 
 
-    def repopulateDatalog(self, rescan=False):
+    def repopulate_datalog(self, rescan=False):
         """
         After changing the column ordering or adding/removing keywords,
         use this to redraw the table in the new positions.
@@ -490,19 +483,20 @@ class LDTObslogGeneratorApp(QtWidgets.QMainWindow, logp.Ui_MainWindow):
         self.table_datalog.horizontalHeader().setDragDropMode(QtWidgets.QAbstractItemView.NoDragDrop)
 
         thedlist = ['NOTES'] + self.headers
+        print(F"Column List: {thedlist}")
 
         # First, grab the data
         tablist = []
         for n in range(0, self.table_datalog.rowCount()):
-            rowdata = {}
-            for m, hkey in enumerate(thedlist):
-                if rescan is True:
-                    # Need to somehow remap the basename'd row label to the
-                    #   original listing of files (with path) to go rescan
-                    fname = ''
-                    rowdata = headerDict(fname, self.headers,
-                                         HDU=self.fitshdu)
-                else:
+            # If we are rescanning the directory, grab the row wholesale
+            if rescan is True:
+                fname = self.data_current[n]
+                rowdata = headerDict(fname, self.headers,
+                                        HDU=self.fitshdu)
+            # Otherwise, snapshot the current table
+            else:
+                rowdata = {}
+                for m, hkey in enumerate(thedlist):
                     rdat = self.table_datalog.item(n, m)
                     if rdat is not None:
                         rowdata[hkey] = rdat.text()
@@ -510,17 +504,16 @@ class LDTObslogGeneratorApp(QtWidgets.QMainWindow, logp.Ui_MainWindow):
                         rowdata[hkey] = ''
             tablist.append(rowdata)
 
-        # Clear out the old data, since we could have rearranged columns
+        # Clear out the old data, since we could have rearranged columns,
+        #  and reset column count to zero.
         self.table_datalog.clear()
+        self.table_datalog.setColumnCount(0)
 
-        # Actually assign the new headers
+        # Actually assign the new headers (used to set # of columns)
         self.headers = self.newheaders
 
-        # Update with the new number of colums
-        self.table_datalog.setColumnCount(len(self.headers) + 1)
-
         # Update with the new column labels
-        self.updatetablecols()
+        self.update_table_cols()
 
         # Actually set the labels for rows
         self.table_datalog.setVerticalHeaderLabels(self.datafilenames)
@@ -529,7 +522,7 @@ class LDTObslogGeneratorApp(QtWidgets.QMainWindow, logp.Ui_MainWindow):
         #   Note! This is for use with headerDict style of grabbing stuff
         for n, row in enumerate(tablist):
             for m, hkey in enumerate(self.headers):
-                print(n, m, row, hkey, row[hkey])
+                #print(n, m, row, hkey, row[hkey])
                 newitem = QtWidgets.QTableWidgetItem(str(row[hkey]))
                 self.table_datalog.setItem(n, m+1, newitem)
 
@@ -555,7 +548,22 @@ class LDTObslogGeneratorApp(QtWidgets.QMainWindow, logp.Ui_MainWindow):
         self.table_datalog.scrollToBottom()
 
 
-    def updateDatalog(self):
+    def update_table_cols(self):
+        """Update the number and labels of table columns
+
+        Update based on the current content of self.headers
+        """
+        # This always puts the NOTES col. right next to the filename
+        self.table_datalog.insertColumn(0)
+
+        # Add the number of columns we'll need for the header keys given
+        for _ in self.headers:
+            colPosition = self.table_datalog.columnCount()
+            self.table_datalog.insertColumn(colPosition)
+        self.table_datalog.setHorizontalHeaderLabels(['NOTES'] + self.headers)
+
+
+    def update_datalog(self):
         """
         General notes:
           glob.glob returns a randomly ordered result, so that can lead
@@ -628,11 +636,11 @@ class LDTObslogGeneratorApp(QtWidgets.QMainWindow, logp.Ui_MainWindow):
                 # self.allData.append(theData)
                 self.datanew.append(theData)
 
-            self.setTableData()
-            self.writedatalog()
+            self.set_table_data()
+            self.write_datalog()
 
 
-    def setTableData(self):
+    def set_table_data(self):
         if len(self.datanew) != 0:
             # Disable fun stuff while we update
             self.table_datalog.setSortingEnabled(False)
@@ -676,7 +684,7 @@ class LDTObslogGeneratorApp(QtWidgets.QMainWindow, logp.Ui_MainWindow):
             print("No new files!")
 
 
-    def writedatalog(self):
+    def write_datalog(self):
         if self.logoutnme != '':
             try:
                 f = open(self.logoutnme, 'w')
