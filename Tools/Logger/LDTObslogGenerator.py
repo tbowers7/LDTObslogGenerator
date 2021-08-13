@@ -237,47 +237,47 @@ class LDTObslogGeneratorApp(QtWidgets.QMainWindow, logp.Ui_MainWindow):
         self.logoutnme = ''
         self.headers = []
         self.fitshdu = 0
-#        self.instrument = 'FLITECAM'
-#        self.headers = ['object', 'aor_id', 'exptime', 'itime', 'co_adds',
-#                        'spectel1', 'spectel2', 'fcfilta', 'fcfiltb',
-#                        'date-obs', 'time_gps', 'sibs_x', 'sibs_y', 'nodcrsys',
-#                        'nodangle', 'nodamp', 'nodbeam', 'dthpatt', 'dthnpos',
-#                        'dthindex', 'dthxoff', 'dthyoff', 'dthoffs',
-#                        'dthcrsys', 'telra', 'teldec', 'tellos', 'telrof',
-#                        'telvpa', "BBMODE", "CBMODE", "BGRESETS", "GRSTCNT",
-#                        'missn-id', 'instcfg', 'instmode']
 
-        # HAWC instrument name and headers
-        # Use HAWCFlight to support current SI file storage method
-#        self.instrument = 'HAWC'
-#        self.instrument = 'HAWCFlight'
-#        self.headers = ['date-obs', 'object', 'mccsmode',
-#                        'spectel1', 'spectel2',
-#                        'instcfg', 'instmode', 'obsmode', 'scnpatt',
-#                        'calmode', 'exptime', 'nodtime', 'fcstoff',
-#                        'chpamp1', 'chpamp2', 'chpfreq',
-#                        'chpangle', 'chpcrsys', 'nodangle', 'nodcrsys',
-#                        'aor_id', 'dthindex', 'dthnpos',
-#                        'dthxoff', 'dthyoff', 'dthscale', 'dthunit',
-#                        'dthcrsys', 'scnrate', 'scncrsys', 'scniters',
-#                        'scnanglc', 'scnampel', 'scnampxl', 'scnfqrat',
-#                        'scnphase', 'scntoff', 'scnnsubs', 'scnlen',
-#                        'scnstep', 'scnsteps', 'scncross',
-#                        'intcalv', 'diag_hz',
-#                        'nhwp', 'hwpstart',
-#                        'telra', 'teldec', 'telvpa',
-#                        'obsra', 'obsdec', 'objra', 'objdec',
-#                        'za_start', 'za_end', 'focus_st', 'focus_en',
-#                        'utcstart', 'utcend',
-#                        'missn-id']
+        # Set tracker variable for instrument
+        self.selected_instrument = self.datalog_instrumentselect.currentText()
 
-        # FIFI-LS instrument name and headers
-        self.instrument = 'FIFI-LS'
-        self.headers = ["DATE-OBS", "AOR_ID", "OBJECT", "EXPTIME",
-                        "OBSRA", "OBSDEC", "DETCHAN", "DICHROIC",
-                        "ALTI_STA", "ZA_START", "NODSTYLE", "NODBEAM",
-                        "DLAM_MAP", "DBET_MAP", "DET_ANGL",
-                        "OBSLAM", "OBSBET", "G_WAVE_B", "G_WAVE_R"]
+        # The inst_list attribute will be a dictionary of dictionaries
+        self.inst_list = {}
+        for inst in ['LMI','DeVeny','NIHTS','RC1','RC2']:
+            self.inst_list[inst] = {}
+
+        # NOTE: This setup presumes we might want to have additional dictionary
+        #  entries for each instrument beyond 'headers'.  If not, then the
+        #  structure of this can simply be one dictionary with the instrument
+        #  as the key and the list of header keywords as the value.
+
+        # Create the list of applicable headers for each instrument
+        self.inst_list['LMI']['headers'] = ['date-obs','object','obstype',
+                                            'telra','teldec','telalt','telaz',
+                                            'airmass','exptime','filters',
+                                            'ccdsum','telfocus','rotframe',
+                                            'skyvpa']
+        self.inst_list['DeVeny']['headers'] = ['date-obs','object','obstype',
+                                            'telra','teldec','telalt','telaz',
+                                            'airmass','exptime','grating',
+                                            'grangle','slitasec','collfoc',
+                                            'filtrear','lampcal','telfocus',
+                                            'rotframe','rotangle','skyvpa']
+        self.inst_list['NIHTS']['headers'] = ['date-obs','object','obstype',
+                                            'telra','teldec','telalt','telaz',
+                                            'airmass','exptime','telfocus',
+                                            'rotframe','rotangle','skyvpa']
+        self.inst_list['RC1']['headers'] = ['date-obs','object','obstype',
+                                            'telra','teldec','telalt','telaz',
+                                            'airmass','exptime','telfocus',
+                                            'rotframe','rotangle','skyvpa']
+        self.inst_list['RC2']['headers'] = ['date-obs','object','obstype',
+                                            'telra','teldec','telalt','telaz',
+                                            'airmass','exptime','telfocus',
+                                            'rotframe','rotangle','skyvpa']
+
+        # Set self.instrument and self.headers attributes
+        self.set_instrument_attrs()
 
         # Things are easier if the keywords are always in CAPS
         self.headers = [each.upper() for each in self.headers]
@@ -302,14 +302,19 @@ class LDTObslogGeneratorApp(QtWidgets.QMainWindow, logp.Ui_MainWindow):
         # Add an action that detects when a cell is changed by the user
         #  in table_datalog!
 
-        # Set tracker variable for instrument
-        self.selected_instrument = self.datalog_instrumentselect.currentText()
-
         # Generic timer setup stuff
         timer = QtCore.QTimer(self)
         timer.timeout.connect(self.showlcd)
         timer.start(500)
         self.showlcd()
+
+
+    def set_instrument_attrs(self):
+        # The self.instrument and self.headers attributes are set based on the
+        #  currently selected instrument
+        self.instrument = self.selected_instrument
+        self.headers = self.inst_list[self.selected_instrument]['headers']
+
 
 
     def spawnkwwindow(self):
@@ -427,7 +432,8 @@ class LDTObslogGeneratorApp(QtWidgets.QMainWindow, logp.Ui_MainWindow):
             self.selected_instrument:
             # print(sel_inst)
             self.selected_instrument = sel_inst
-            # NEED TO FIGURE OUT HOW TO ADJUST THE KEYWORDS DESIRED...
+            self.set_instrument_attrs()
+            # NEED TO FIGURE OUT HOW TO REPOPULATE THE TABLE WITHOUT CRASHING...
             self.repopulateDatalog()
    
         if self.startdatalog is True and \
@@ -521,6 +527,10 @@ class LDTObslogGeneratorApp(QtWidgets.QMainWindow, logp.Ui_MainWindow):
         self.table_datalog.horizontalHeader().setSectionsMovable(True)
         self.table_datalog.horizontalHeader().setDragEnabled(True)
         self.table_datalog.horizontalHeader().setDragDropMode(QtWidgets.QAbstractItemView.InternalMove)
+
+        # Looks prettier with this stuff
+        self.table_datalog.resizeColumnsToContents()
+        self.table_datalog.resizeRowsToContents()
 
         self.table_datalog.show()
 
@@ -634,6 +644,10 @@ class LDTObslogGeneratorApp(QtWidgets.QMainWindow, logp.Ui_MainWindow):
             self.table_datalog.horizontalHeader().setSectionsMovable(True)
             self.table_datalog.horizontalHeader().setDragEnabled(True)
             self.table_datalog.horizontalHeader().setDragDropMode(QtWidgets.QAbstractItemView.InternalMove)
+
+            # Looks prettier with this stuff
+            self.table_datalog.resizeColumnsToContents()
+            self.table_datalog.resizeRowsToContents()
 
             self.table_datalog.show()
 
