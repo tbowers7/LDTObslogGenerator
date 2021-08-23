@@ -391,6 +391,17 @@ class LDTObslogGeneratorApp(QtWidgets.QMainWindow, logp.Ui_MainWindow):
             '%m/%d/%Y %H:%M:%S')
         self.localnow_datestr = self.localnow.strftime('%a %h %d, %Y')
 
+        # Compute Moon Elevation & Phase
+        self.moon = ephem.Moon(self.ldt)
+        self.moonel_str = f"El: {self.moon.alt / np.pi * 180.:.2f}º"
+        self.moonph_str = f"Phase: {self.moon.phase:.0f}%"
+        if self.moon.phase < 25 or self.moon.alt < 0:
+           self.moonbr_str = 'Dark'
+        elif self.moon.phase < 70:
+            self.moonbr_str = 'Gray'
+        else:
+            self.moonbr_str = 'Bright'
+
         # Compute Sun Elevation status
         self.ldt.date = ephem.Date(self.utcnow)
         self.sun = ephem.Sun(self.ldt)
@@ -404,12 +415,7 @@ class LDTObslogGeneratorApp(QtWidgets.QMainWindow, logp.Ui_MainWindow):
         elif sun_alt > -18:
             self.skystat_str = "Astronomical Twilight"
         else:
-            self.skystat_str = "Dark"
-
-        # Compute Moon Elevation & Phase
-        self.moon = ephem.Moon(self.ldt)
-        self.moonel_str = f"El: {self.moon.alt / np.pi * 180.:.2f}º"
-        self.moonph_str = f"Phase: {self.moon.phase:.0f}%"
+            self.skystat_str = f"Night - {self.moonbr_str}"
 
 
     def show_lcd(self):
