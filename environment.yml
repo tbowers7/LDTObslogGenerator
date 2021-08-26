@@ -1,0 +1,10 @@
+name: log_test
+channels:
+  - astropy
+dependencies:
+  - python>=3.8
+  - numpy>=1.18
+  - astropy>=4.0
+  - pytz>=2020.0
+  - ephem>=4.0
+  - pyqt>=5.0
