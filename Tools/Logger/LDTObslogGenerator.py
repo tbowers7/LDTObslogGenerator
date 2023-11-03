@@ -253,7 +253,7 @@ class LDTObslogGeneratorApp(QtWidgets.QMainWindow, logp.Ui_MainWindow):
 
         # The inst_list attribute will be a dictionary of dictionaries
         self.inst_list = {}
-        for inst in ['LMI','DeVeny','NIHTS','RC1','RC2']:
+        for inst in ['LMI','DeVeny','NIHTS','RC1','RC2','LBWR']:
             self.inst_list[inst] = {}
 
         # NOTE: This setup presumes we might want to have additional dictionary
@@ -265,18 +265,19 @@ class LDTObslogGeneratorApp(QtWidgets.QMainWindow, logp.Ui_MainWindow):
         self.inst_list['LMI']['headers'] = ['date-obs','object','obstype',
                                             'telra','teldec','telalt','telaz',
                                             'airmass','exptime','filters',
-                                            'ccdsum','telfocus','rotframe',
-                                            'skyvpa']
+                                            'mnttemp','telfocus','ccdsum',
+                                            'rotframe','skyvpa','guimode']
         self.inst_list['DeVeny']['headers'] = ['date-obs','object','obstype',
                                             'telra','teldec','telalt','telaz',
-                                            'airmass','exptime','grating',
-                                            'grangle','slitasec','collfoc',
-                                            'filtrear','lampcal','telfocus',
-                                            'rotframe','rotangle','skyvpa']
+                                            'airmass','exptime','lampcal',
+                                            'grating','filtrear','grangle',
+                                            'slitasec','collfoc','mnttemp',
+                                            'ccdsum','telfocus','rotframe',
+                                            'rotangle','skyvpa','guimode','filtp2']
         self.inst_list['NIHTS']['headers'] = ['date-obs','object','obstype',
                                             'telra','teldec','telalt','telaz',
                                             'airmass','exptime','telfocus',
-                                            'rotframe','rotangle','skyvpa']
+                                            'rotframe','rotangle','skyvpa','guimode']
         self.inst_list['RC1']['headers'] = ['date-obs','object','obstype',
                                             'telra','teldec','telalt','telaz',
                                             'airmass','exptime','telfocus',
@@ -285,6 +286,10 @@ class LDTObslogGeneratorApp(QtWidgets.QMainWindow, logp.Ui_MainWindow):
                                             'telra','teldec','telalt','telaz',
                                             'airmass','exptime','telfocus',
                                             'rotframe','rotangle','skyvpa']
+        self.inst_list['LBWR']['headers'] = ['date-obs','object','imagetyp',
+                                             'exptime','readmode','gain',
+                                             'offset','ccd-temp','xbinning',
+                                             'ybinning']
 
         # Set self.instrument and self.headers attributes
         self.set_instrument_attrs()
@@ -333,7 +338,7 @@ class LDTObslogGeneratorApp(QtWidgets.QMainWindow, logp.Ui_MainWindow):
         window = FITSKeyWordDialog(self)
         result = window.exec_()
         if result == 1:
-            self.fitshdu = np.int(window.fitskw_hdu.value())
+            self.fitshdu = int(window.fitskw_hdu.value())
             self.newheaders = window.headers
             print(self.newheaders)
 
@@ -415,7 +420,7 @@ class LDTObslogGeneratorApp(QtWidgets.QMainWindow, logp.Ui_MainWindow):
         elif sun_alt > -18:
             self.skystat_str = "Astronomical Twilight"
         else:
-            self.skystat_str = f"Night - {self.moonbr_str}"
+            self.skystat_str = f"Night: {self.moonbr_str}"
 
 
     def show_lcd(self):

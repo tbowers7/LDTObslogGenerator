@@ -236,6 +236,7 @@ class Ui_MainWindow(object):
         self.datalog_instrumentselect.setItemText(2, _translate("MainWindow", "NIHTS"))
         self.datalog_instrumentselect.setItemText(3, _translate("MainWindow", "RC1"))
         self.datalog_instrumentselect.setItemText(4, _translate("MainWindow", "RC2"))
+        self.datalog_instrumentselect.setItemText(5, _translate("MainWindow", "LBWR"))
         self.datalog_autoupdate.setText(_translate("MainWindow", "Autoupdate every:"))
         self.txt_datalog_instrument.setText(_translate("MainWindow", "Instrument:"))
         self.datalog_updateinterval.setSuffix(_translate("MainWindow", " seconds"))

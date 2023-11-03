@@ -1,4 +1,4 @@
-name: log_test
+name: log
 channels:
   - astropy
 dependencies:
