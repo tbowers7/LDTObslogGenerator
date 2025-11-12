@@ -333,6 +333,11 @@
                 </item>
                 <item>
                  <property name="text">
+                  <string>RIMAS</string>
+                 </property>
+                </item>
+                <item>
+                 <property name="text">
                   <string>RC1</string>
                  </property>
                 </item>
