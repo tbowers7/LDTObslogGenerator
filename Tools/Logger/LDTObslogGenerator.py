@@ -253,7 +253,7 @@ class LDTObslogGeneratorApp(QtWidgets.QMainWindow, logp.Ui_MainWindow):
 
         # The inst_list attribute will be a dictionary of dictionaries
         self.inst_list = {}
-        for inst in ['LMI','DeVeny','NIHTS','RC1','RC2','LBWR']:
+        for inst in ['LMI','DeVeny','NIHTS','RIMAS','RC1','RC2','LBWR']:
             self.inst_list[inst] = {}
 
         # NOTE: This setup presumes we might want to have additional dictionary
@@ -267,7 +267,7 @@ class LDTObslogGeneratorApp(QtWidgets.QMainWindow, logp.Ui_MainWindow):
                                             'airmass','exptime','filters',
                                             'mnttemp','telfocus','ccdsum',
                                             'rotframe','skyvpa','guimode']
-        self.inst_list['DeVeny']['headers'] = ['date-obs','object','obstype',
+        self.inst_list['DeVeny']['headers'] = ['date-obs','object','scitarg','obstype',
                                             'telra','teldec','telalt','telaz',
                                             'airmass','exptime','lampcal',
                                             'grating','filtrear','grangle',
@@ -290,6 +290,12 @@ class LDTObslogGeneratorApp(QtWidgets.QMainWindow, logp.Ui_MainWindow):
                                              'exptime','readmode','gain',
                                              'offset','ccd-temp','xbinning',
                                              'ybinning']
+        self.inst_list['RIMAS']['headers'] = ['date-beg','objname','objtype','camname',
+                                              'ra','dec','rot','secz','exptime','nframes','filter1',
+                                              'filter2','filter3','filter4','gain0',
+                                              'raoff','decoff','rotoff','dithtyp',
+                                              'dithrad','dithph','dith_rep','nint',
+                                              'comment1','comment2']
 
         # Set self.instrument and self.headers attributes
         self.set_instrument_attrs()
@@ -730,7 +736,7 @@ class LDTObslogGeneratorApp(QtWidgets.QMainWindow, logp.Ui_MainWindow):
 
 def main():
     app = QtWidgets.QApplication(sys.argv)
-    QtGui.QFontDatabase.addApplicationFont("./SOFIACruiseTools/resources/fonts/digital_7/digital-7_mono.ttf")
+    QtGui.QFontDatabase.addApplicationFont("./LDTObslogGeneratorTools/resources/fonts/digital_7/digital-7_mono.ttf")
     form = LDTObslogGeneratorApp()
     form.show()  # Show the form
     app.exec_()  # and execute the app
